@@ -10,9 +10,14 @@ import {
   YAxis,
   Tooltip,
   Legend,
+  BarChart,
+  Bar,
+  CartesianGrid,
 } from 'recharts';
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Select } from '../components/ui/select';
+import { Badge } from '../components/ui/badge';
 import { useAppStore } from '../stores/useAppStore';
 import { formatCurrency, getMonthKey } from '../lib/utils';
 
@@ -106,6 +111,85 @@ export const Analytics: React.FC = () => {
     });
   }, [expenses]);
 
+  // Year-over-Year comparison data
+  const yoyData = useMemo(() => {
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const lastYear = currentYear - 1;
+
+    // Get spending by month for current and last year
+    const currentYearMonths: Record<number, number> = {};
+    const lastYearMonths: Record<number, number> = {};
+
+    // Initialize all months
+    for (let i = 0; i < 12; i++) {
+      currentYearMonths[i] = 0;
+      lastYearMonths[i] = 0;
+    }
+
+    expenses.forEach((e) => {
+      const expDate = new Date(e.date);
+      const expYear = expDate.getFullYear();
+      const expMonth = expDate.getMonth();
+
+      if (expYear === currentYear) {
+        currentYearMonths[expMonth] += e.amount;
+      } else if (expYear === lastYear) {
+        lastYearMonths[expMonth] += e.amount;
+      }
+    });
+
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    return monthNames.map((name, i) => ({
+      month: name,
+      [currentYear]: currentYearMonths[i],
+      [lastYear]: lastYearMonths[i],
+      difference: currentYearMonths[i] - lastYearMonths[i],
+      percentChange:
+        lastYearMonths[i] > 0
+          ? ((currentYearMonths[i] - lastYearMonths[i]) / lastYearMonths[i]) * 100
+          : currentYearMonths[i] > 0
+          ? 100
+          : 0,
+    }));
+  }, [expenses]);
+
+  // YoY Summary stats
+  const yoySummary = useMemo(() => {
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const lastYear = currentYear - 1;
+
+    // Only compare up to current month
+    const currentMonth = today.getMonth();
+
+    let currentYearTotal = 0;
+    let lastYearTotal = 0;
+
+    yoyData.slice(0, currentMonth + 1).forEach((month) => {
+      currentYearTotal += month[currentYear] as number;
+      lastYearTotal += month[lastYear] as number;
+    });
+
+    const difference = currentYearTotal - lastYearTotal;
+    const percentChange =
+      lastYearTotal > 0
+        ? ((currentYearTotal - lastYearTotal) / lastYearTotal) * 100
+        : currentYearTotal > 0
+        ? 100
+        : 0;
+
+    return {
+      currentYear,
+      lastYear,
+      currentYearTotal,
+      lastYearTotal,
+      difference,
+      percentChange,
+    };
+  }, [yoyData]);
+
   const total = categoryData.reduce((sum, item) => sum + item.amount, 0);
 
   const timeRangeOptions = [
@@ -119,14 +203,14 @@ export const Analytics: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
             Analytics
           </h1>
           <p className="text-slate-500">Visualize your spending habits</p>
         </div>
-        <div className="w-48">
+        <div className="w-full sm:w-48">
           <Select
             options={timeRangeOptions}
             value={timeRange}
@@ -251,6 +335,144 @@ export const Analytics: React.FC = () => {
                 />
               </LineChart>
             </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Year-over-Year Comparison */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Year-over-Year Comparison</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* YoY Summary Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4">
+              <p className="text-sm text-slate-500 mb-1">{yoySummary.currentYear} (YTD)</p>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white">
+                {formatCurrency(yoySummary.currentYearTotal)}
+              </p>
+            </div>
+            <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4">
+              <p className="text-sm text-slate-500 mb-1">{yoySummary.lastYear} (Same Period)</p>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white">
+                {formatCurrency(yoySummary.lastYearTotal)}
+              </p>
+            </div>
+            <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4">
+              <p className="text-sm text-slate-500 mb-1">Change</p>
+              <div className="flex items-center gap-2">
+                <p
+                  className={`text-2xl font-bold ${
+                    yoySummary.difference < 0
+                      ? 'text-green-600'
+                      : yoySummary.difference > 0
+                      ? 'text-red-600'
+                      : 'text-slate-600'
+                  }`}
+                >
+                  {yoySummary.difference >= 0 ? '+' : ''}
+                  {formatCurrency(yoySummary.difference)}
+                </p>
+                <Badge
+                  variant={
+                    yoySummary.percentChange < 0
+                      ? 'success'
+                      : yoySummary.percentChange > 0
+                      ? 'destructive'
+                      : 'secondary'
+                  }
+                  className="flex items-center gap-1"
+                >
+                  {yoySummary.percentChange < 0 ? (
+                    <TrendingDown className="h-3 w-3" />
+                  ) : yoySummary.percentChange > 0 ? (
+                    <TrendingUp className="h-3 w-3" />
+                  ) : (
+                    <Minus className="h-3 w-3" />
+                  )}
+                  {Math.abs(Math.round(yoySummary.percentChange))}%
+                </Badge>
+              </div>
+            </div>
+          </div>
+
+          {/* YoY Bar Chart */}
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={yoyData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis tickFormatter={(value) => `$${value}`} />
+                <Tooltip
+                  formatter={(value) => formatCurrency(value as number)}
+                />
+                <Legend />
+                <Bar
+                  dataKey={yoySummary.currentYear}
+                  fill="#3b82f6"
+                  name={`${yoySummary.currentYear}`}
+                />
+                <Bar
+                  dataKey={yoySummary.lastYear}
+                  fill="#94a3b8"
+                  name={`${yoySummary.lastYear}`}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Monthly Breakdown Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b dark:border-slate-700">
+                  <th className="text-left py-2 px-3 font-medium text-slate-500">Month</th>
+                  <th className="text-right py-2 px-3 font-medium text-slate-500">{yoySummary.currentYear}</th>
+                  <th className="text-right py-2 px-3 font-medium text-slate-500">{yoySummary.lastYear}</th>
+                  <th className="text-right py-2 px-3 font-medium text-slate-500">Change</th>
+                </tr>
+              </thead>
+              <tbody>
+                {yoyData.map((month) => {
+                  const current = month[yoySummary.currentYear] as number;
+                  const last = month[yoySummary.lastYear] as number;
+                  const diff = month.difference;
+                  const pctChange = month.percentChange;
+
+                  return (
+                    <tr key={month.month} className="border-b dark:border-slate-800">
+                      <td className="py-2 px-3 font-medium">{month.month}</td>
+                      <td className="py-2 px-3 text-right">{formatCurrency(current)}</td>
+                      <td className="py-2 px-3 text-right text-slate-500">{formatCurrency(last)}</td>
+                      <td className="py-2 px-3 text-right">
+                        {current > 0 || last > 0 ? (
+                          <span
+                            className={`inline-flex items-center gap-1 ${
+                              diff < 0
+                                ? 'text-green-600'
+                                : diff > 0
+                                ? 'text-red-600'
+                                : 'text-slate-500'
+                            }`}
+                          >
+                            {diff < 0 ? (
+                              <TrendingDown className="h-3 w-3" />
+                            ) : diff > 0 ? (
+                              <TrendingUp className="h-3 w-3" />
+                            ) : null}
+                            {diff >= 0 ? '+' : ''}
+                            {Math.round(pctChange)}%
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </CardContent>
       </Card>

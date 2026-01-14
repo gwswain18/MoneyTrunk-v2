@@ -22,3 +22,31 @@ body {
 #root {
   min-height: 100vh;
 }
+
+/* Mobile improvements */
+@media (max-width: 640px) {
+  /* Better touch targets */
+  button, a, [role="button"] {
+    min-height: 44px;
+  }
+
+  /* Prevent horizontal scroll */
+  html, body {
+    overflow-x: hidden;
+  }
+
+  /* Smooth scrolling on iOS */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

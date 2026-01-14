@@ -69,6 +69,20 @@ export interface Expense {
   description: string;
   amount: number;
   tags?: string[];
+  recurringExpenseId?: string; // Link to recurring expense template
+}
+
+export interface RecurringExpense {
+  id: string;
+  description: string;
+  amount: number;
+  category: string;
+  frequency: Frequency;
+  startDate: string;
+  nextDueDate: string;
+  lastGeneratedDate?: string;
+  isActive: boolean;
+  tags?: string[];
 }
 
 export interface SavingsGoal {
@@ -118,17 +132,70 @@ export interface LentMoney {
   tags?: string[];
 }
 
+// ==================== Net Worth Tracking ====================
+
+export enum AssetType {
+  Cash = 'cash',
+  Investment = 'investment',
+  Property = 'property',
+  Vehicle = 'vehicle',
+  Other = 'other',
+}
+
+export enum LiabilityType {
+  CreditCard = 'credit_card',
+  Mortgage = 'mortgage',
+  CarLoan = 'car_loan',
+  StudentLoan = 'student_loan',
+  PersonalLoan = 'personal_loan',
+  Other = 'other',
+}
+
+export interface Asset {
+  id: string;
+  name: string;
+  type: AssetType;
+  value: number;
+  notes?: string;
+  lastUpdated: string;
+}
+
+export interface Liability {
+  id: string;
+  name: string;
+  type: LiabilityType;
+  balance: number;
+  interestRate?: number;
+  notes?: string;
+  lastUpdated: string;
+}
+
+export interface NetWorthSnapshot {
+  date: string; // YYYY-MM-DD
+  totalAssets: number;
+  totalLiabilities: number;
+  netWorth: number;
+}
+
 // ==================== App Data ====================
+
+export interface CategoryBudget {
+  category: string;
+  limit: number;
+}
 
 export interface AppSettings {
   userName: string;
   monthlyBudget: number;
+  categoryBudgets: CategoryBudget[];
   darkMode: boolean;
   pinEnabled: boolean;
   pinHash?: string;
   autoBackupEnabled: boolean;
   lastBackupDate?: string;
   encryptionEnabled: boolean;
+  notificationsEnabled: boolean;
+  budgetAlertThreshold: number; // Percentage (0-100) at which to alert
 }
 
 export interface AppData {
@@ -136,9 +203,13 @@ export interface AppData {
   subscriptions: Subscription[];
   income: Income[];
   expenses: Expense[];
+  recurringExpenses: RecurringExpense[];
   savings: SavingsGoal[];
   borrowed: BorrowedMoney[];
   lent: LentMoney[];
+  assets: Asset[];
+  liabilities: Liability[];
+  netWorthHistory: NetWorthSnapshot[];
   settings: AppSettings;
   tags: string[];
 }
@@ -176,10 +247,13 @@ export const BILL_CATEGORIES = [
 export const DEFAULT_SETTINGS: AppSettings = {
   userName: '',
   monthlyBudget: 0,
+  categoryBudgets: [],
   darkMode: false,
   pinEnabled: false,
   autoBackupEnabled: false,
   encryptionEnabled: false,
+  notificationsEnabled: false,
+  budgetAlertThreshold: 80,
 };
 
 export const SEED_DATA: AppData = {
@@ -187,9 +261,13 @@ export const SEED_DATA: AppData = {
   subscriptions: [],
   income: [],
   expenses: [],
+  recurringExpenses: [],
   savings: [],
   borrowed: [],
   lent: [],
+  assets: [],
+  liabilities: [],
+  netWorthHistory: [],
   settings: DEFAULT_SETTINGS,
   tags: [],
 };

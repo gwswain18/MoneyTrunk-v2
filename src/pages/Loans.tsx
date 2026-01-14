@@ -102,14 +102,14 @@ export const Loans: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
             Personal Loans
           </h1>
           <p className="text-slate-500">Track money borrowed and lent</p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)}>
+        <Button onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" /> Add Loan
         </Button>
       </div>
@@ -137,26 +137,26 @@ export const Loans: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800">
+      <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800 overflow-x-auto">
         <button
           onClick={() => setActiveTab('borrowed')}
-          className={`px-4 py-2 text-sm font-medium transition-colors ${
+          className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
             activeTab === 'borrowed'
               ? 'border-b-2 border-red-500 text-red-600'
               : 'text-slate-500 hover:text-slate-700'
           }`}
         >
-          Money You Owe ({borrowed.length})
+          You Owe ({borrowed.length})
         </button>
         <button
           onClick={() => setActiveTab('lent')}
-          className={`px-4 py-2 text-sm font-medium transition-colors ${
+          className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
             activeTab === 'lent'
               ? 'border-b-2 border-green-500 text-green-600'
               : 'text-slate-500 hover:text-slate-700'
           }`}
         >
-          Money Owed to You ({lent.length})
+          Owed to You ({lent.length})
         </button>
       </div>
 

@@ -285,7 +285,7 @@ export const Reports: React.FC = () => {
           <CardTitle>Generate Report</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Select
               label="Report Type"
               value={reportType}
@@ -302,7 +302,7 @@ export const Reports: React.FC = () => {
               onChange={(e) => setSelectedMonth(e.target.value)}
               options={monthOptions}
             />
-            <div className="flex items-end">
+            <div className="flex items-end sm:col-span-2 lg:col-span-1">
               <Button onClick={generatePDF} className="w-full">
                 <Download className="mr-2 h-4 w-4" /> Download PDF
               </Button>

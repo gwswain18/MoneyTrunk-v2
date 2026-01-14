@@ -84,14 +84,14 @@ export const Bills: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
             Bills & Subscriptions
           </h1>
           <p className="text-slate-500">Manage your recurring payments</p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)}>
+        <Button onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" /> Add Bill
         </Button>
       </div>
@@ -109,30 +109,34 @@ export const Bills: React.FC = () => {
               {bills.map((bill) => (
                 <li
                   key={bill.id}
-                  className="flex items-center justify-between py-4"
+                  className="py-4"
                 >
-                  <div>
-                    <p className="font-medium text-slate-900 dark:text-white">
-                      {bill.name}
-                    </p>
-                    <p className="text-sm text-slate-500">
-                      {bill.category} • Due {formatDateShort(bill.dueDate)}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <p className="font-semibold">
-                      {formatCurrency(bill.amountDue)}
-                    </p>
-                    {getStatusBadge(bill.status)}
-                    {bill.status !== BillStatus.Paid && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => markAsPaid(bill.id)}
-                      >
-                        Mark Paid
-                      </Button>
-                    )}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-slate-900 dark:text-white truncate">
+                        {bill.name}
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        {bill.category} • Due {formatDateShort(bill.dueDate)}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between sm:justify-end gap-3">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold">
+                          {formatCurrency(bill.amountDue)}
+                        </p>
+                        {getStatusBadge(bill.status)}
+                      </div>
+                      {bill.status !== BillStatus.Paid && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => markAsPaid(bill.id)}
+                        >
+                          Mark Paid
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </li>
               ))}

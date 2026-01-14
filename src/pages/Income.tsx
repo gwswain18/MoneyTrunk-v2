@@ -120,14 +120,14 @@ export const Income: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
             Income
           </h1>
           <p className="text-slate-500">Track your income sources</p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)}>
+        <Button onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" /> Add Income
         </Button>
       </div>
@@ -178,36 +178,42 @@ export const Income: React.FC = () => {
               {income.map((item) => (
                 <li
                   key={item.id}
-                  className="flex items-center justify-between py-4"
+                  className="py-4"
                 >
-                  <div>
-                    <p className="font-medium text-slate-900 dark:text-white">
-                      {item.sourceName}
-                    </p>
-                    <p className="text-sm text-slate-500">
-                      Next: {formatDateShort(item.nextExpectedDate)}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <p className="font-semibold text-green-600">
-                      {formatCurrency(item.amount)}
-                    </p>
-                    {getFrequencyBadge(item.frequency)}
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => openEditModal(item)}
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="text-slate-400 hover:text-red-500"
-                      onClick={() => deleteIncome(item.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-slate-900 dark:text-white truncate">
+                        {item.sourceName}
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        Next: {formatDateShort(item.nextExpectedDate)}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-green-600">
+                          {formatCurrency(item.amount)}
+                        </p>
+                        {getFrequencyBadge(item.frequency)}
+                      </div>
+                      <div className="flex items-center">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => openEditModal(item)}
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="text-slate-400 hover:text-red-500"
+                          onClick={() => deleteIncome(item.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </li>
               ))}

@@ -6,12 +6,17 @@ import {
   Subscription,
   Income,
   Expense,
+  RecurringExpense,
   SavingsGoal,
   BorrowedMoney,
   LentMoney,
   Payment,
   AppSettings,
   LoanStatus,
+  Frequency,
+  Asset,
+  Liability,
+  NetWorthSnapshot,
   SEED_DATA,
 } from '../types';
 import { generateId } from '../lib/utils';
@@ -37,6 +42,12 @@ interface AppStore extends AppData {
   updateExpense: (id: string, expense: Partial<Expense>) => void;
   deleteExpense: (id: string) => void;
 
+  // Recurring Expenses
+  addRecurringExpense: (expense: Omit<RecurringExpense, 'id'>) => void;
+  updateRecurringExpense: (id: string, expense: Partial<RecurringExpense>) => void;
+  deleteRecurringExpense: (id: string) => void;
+  processRecurringExpenses: () => void;
+
   // Savings
   addSavingsGoal: (goal: Omit<SavingsGoal, 'id'>) => void;
   updateSavingsGoal: (id: string, goal: Partial<SavingsGoal>) => void;
@@ -54,6 +65,19 @@ interface AppStore extends AppData {
   updateLent: (id: string, lent: Partial<LentMoney>) => void;
   deleteLent: (id: string) => void;
   addRepaymentToLent: (id: string, payment: Omit<Payment, 'id'>) => void;
+
+  // Assets
+  addAsset: (asset: Omit<Asset, 'id'>) => void;
+  updateAsset: (id: string, asset: Partial<Asset>) => void;
+  deleteAsset: (id: string) => void;
+
+  // Liabilities
+  addLiability: (liability: Omit<Liability, 'id'>) => void;
+  updateLiability: (id: string, liability: Partial<Liability>) => void;
+  deleteLiability: (id: string) => void;
+
+  // Net Worth
+  recordNetWorthSnapshot: () => void;
 
   // Settings
   updateSettings: (settings: Partial<AppSettings>) => void;
@@ -131,6 +155,85 @@ export const useAppStore = create<AppStore>()(
         set((state) => ({
           expenses: state.expenses.filter((e) => e.id !== id),
         })),
+
+      // Recurring Expenses
+      addRecurringExpense: (expense) =>
+        set((state) => ({
+          recurringExpenses: [
+            ...state.recurringExpenses,
+            { ...expense, id: generateId() },
+          ],
+        })),
+      updateRecurringExpense: (id, expense) =>
+        set((state) => ({
+          recurringExpenses: state.recurringExpenses.map((e) =>
+            e.id === id ? { ...e, ...expense } : e
+          ),
+        })),
+      deleteRecurringExpense: (id) =>
+        set((state) => ({
+          recurringExpenses: state.recurringExpenses.filter((e) => e.id !== id),
+        })),
+      processRecurringExpenses: () =>
+        set((state) => {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const todayStr = today.toISOString().split('T')[0];
+
+          const newExpenses: Expense[] = [];
+          const updatedRecurring = state.recurringExpenses.map((rec) => {
+            if (!rec.isActive) return rec;
+
+            const nextDue = new Date(rec.nextDueDate);
+            nextDue.setHours(0, 0, 0, 0);
+
+            // Check if expense is due
+            if (nextDue <= today) {
+              // Create the expense
+              newExpenses.push({
+                id: generateId(),
+                date: rec.nextDueDate,
+                category: rec.category,
+                description: rec.description,
+                amount: rec.amount,
+                tags: rec.tags,
+                recurringExpenseId: rec.id,
+              });
+
+              // Calculate next due date
+              let newNextDue = new Date(nextDue);
+              switch (rec.frequency) {
+                case Frequency.Weekly:
+                  newNextDue.setDate(newNextDue.getDate() + 7);
+                  break;
+                case Frequency.BiWeekly:
+                  newNextDue.setDate(newNextDue.getDate() + 14);
+                  break;
+                case Frequency.Monthly:
+                  newNextDue.setMonth(newNextDue.getMonth() + 1);
+                  break;
+                case Frequency.Yearly:
+                  newNextDue.setFullYear(newNextDue.getFullYear() + 1);
+                  break;
+                default:
+                  break;
+              }
+
+              return {
+                ...rec,
+                lastGeneratedDate: todayStr,
+                nextDueDate: newNextDue.toISOString().split('T')[0],
+              };
+            }
+
+            return rec;
+          });
+
+          return {
+            recurringExpenses: updatedRecurring,
+            expenses: [...state.expenses, ...newExpenses],
+          };
+        }),
 
       // Savings
       addSavingsGoal: (goal) =>
@@ -212,6 +315,70 @@ export const useAppStore = create<AppStore>()(
             };
           }),
         })),
+
+      // Assets
+      addAsset: (asset) =>
+        set((state) => ({
+          assets: [...state.assets, { ...asset, id: generateId() }],
+        })),
+      updateAsset: (id, asset) =>
+        set((state) => ({
+          assets: state.assets.map((a) => (a.id === id ? { ...a, ...asset } : a)),
+        })),
+      deleteAsset: (id) =>
+        set((state) => ({
+          assets: state.assets.filter((a) => a.id !== id),
+        })),
+
+      // Liabilities
+      addLiability: (liability) =>
+        set((state) => ({
+          liabilities: [...state.liabilities, { ...liability, id: generateId() }],
+        })),
+      updateLiability: (id, liability) =>
+        set((state) => ({
+          liabilities: state.liabilities.map((l) =>
+            l.id === id ? { ...l, ...liability } : l
+          ),
+        })),
+      deleteLiability: (id) =>
+        set((state) => ({
+          liabilities: state.liabilities.filter((l) => l.id !== id),
+        })),
+
+      // Net Worth
+      recordNetWorthSnapshot: () =>
+        set((state) => {
+          const today = new Date().toISOString().split('T')[0];
+          const totalAssets = state.assets.reduce((sum, a) => sum + a.value, 0);
+          const totalLiabilities = state.liabilities.reduce((sum, l) => sum + l.balance, 0);
+          const netWorth = totalAssets - totalLiabilities;
+
+          // Check if we already have a snapshot for today
+          const existingIndex = state.netWorthHistory.findIndex(
+            (s) => s.date === today
+          );
+
+          if (existingIndex >= 0) {
+            // Update existing snapshot
+            const updatedHistory = [...state.netWorthHistory];
+            updatedHistory[existingIndex] = {
+              date: today,
+              totalAssets,
+              totalLiabilities,
+              netWorth,
+            };
+            return { netWorthHistory: updatedHistory };
+          }
+
+          // Add new snapshot
+          return {
+            netWorthHistory: [
+              ...state.netWorthHistory,
+              { date: today, totalAssets, totalLiabilities, netWorth },
+            ],
+          };
+        }),
 
       // Settings
       updateSettings: (settings) =>

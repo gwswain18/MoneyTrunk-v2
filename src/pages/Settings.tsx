@@ -1,5 +1,10 @@
-import { useRef, useState } from 'react';
-import { Download, Upload, Trash2, User, Moon, Shield, Save, FileSpreadsheet, Lock } from 'lucide-react';
+import { useRef, useState, useEffect } from 'react';
+import { Download, Upload, Trash2, User, Moon, Shield, Save, FileSpreadsheet, Lock, Bell } from 'lucide-react';
+import {
+  isNotificationSupported,
+  getNotificationPermission,
+  requestNotificationPermission,
+} from '../services/notifications';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -20,7 +25,31 @@ export const Settings: React.FC = () => {
   const [monthlyBudget, setMonthlyBudget] = useState(settings.monthlyBudget.toString());
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [pinSetupOpen, setPinSetupOpen] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState<string>(getNotificationPermission());
+  const [budgetThreshold, setBudgetThreshold] = useState(settings.budgetAlertThreshold?.toString() || '80');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // Update notification permission status
+    setNotificationPermission(getNotificationPermission());
+  }, []);
+
+  const handleEnableNotifications = async () => {
+    const granted = await requestNotificationPermission();
+    setNotificationPermission(getNotificationPermission());
+    if (granted) {
+      updateSettings({ notificationsEnabled: true });
+    }
+  };
+
+  const handleDisableNotifications = () => {
+    updateSettings({ notificationsEnabled: false });
+  };
+
+  const handleSaveNotificationSettings = () => {
+    updateSettings({ budgetAlertThreshold: parseInt(budgetThreshold) || 80 });
+    alert('Notification settings saved!');
+  };
 
   const handleSaveProfile = () => {
     updateSettings({
@@ -161,9 +190,13 @@ export const Settings: React.FC = () => {
           subscriptions: Array.isArray(json.subscriptions) ? json.subscriptions : [],
           income: Array.isArray(json.income) ? json.income : [],
           expenses: Array.isArray(json.expenses) ? json.expenses : [],
+          recurringExpenses: Array.isArray(json.recurringExpenses) ? json.recurringExpenses : [],
           savings: Array.isArray(json.savings) ? json.savings : [],
           borrowed: Array.isArray(json.borrowed) ? json.borrowed : [],
           lent: Array.isArray(json.lent) ? json.lent : [],
+          assets: Array.isArray(json.assets) ? json.assets : [],
+          liabilities: Array.isArray(json.liabilities) ? json.liabilities : [],
+          netWorthHistory: Array.isArray(json.netWorthHistory) ? json.netWorthHistory : [],
           settings: json.settings || settings,
           tags: Array.isArray(json.tags) ? json.tags : [],
         };
@@ -262,6 +295,66 @@ export const Settings: React.FC = () => {
               {settings.darkMode ? 'On' : 'Off'}
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Notifications */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bell className="h-5 w-5" /> Notifications
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!isNotificationSupported() ? (
+            <p className="text-sm text-slate-500">
+              Notifications are not supported in this browser.
+            </p>
+          ) : (
+            <>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-slate-900 dark:text-white">
+                    Budget Alerts
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    {notificationPermission === 'denied'
+                      ? 'Notifications blocked. Enable in browser settings.'
+                      : settings.notificationsEnabled
+                      ? 'Get alerts when approaching budget limits'
+                      : 'Enable notifications for budget warnings'}
+                  </p>
+                </div>
+                <Button
+                  variant={settings.notificationsEnabled ? 'destructive' : 'outline'}
+                  onClick={settings.notificationsEnabled ? handleDisableNotifications : handleEnableNotifications}
+                  disabled={notificationPermission === 'denied'}
+                >
+                  {settings.notificationsEnabled ? 'Disable' : 'Enable'}
+                </Button>
+              </div>
+
+              {settings.notificationsEnabled && (
+                <div className="border-t pt-4 dark:border-slate-800">
+                  <Input
+                    label="Alert Threshold (%)"
+                    type="number"
+                    min="50"
+                    max="100"
+                    step="5"
+                    value={budgetThreshold}
+                    onChange={(e) => setBudgetThreshold(e.target.value)}
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
+                    Get notified when spending reaches this percentage of budget
+                  </p>
+                  <Button className="mt-3" size="sm" onClick={handleSaveNotificationSettings}>
+                    Save Threshold
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
         </CardContent>
       </Card>
 

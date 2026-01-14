@@ -4,11 +4,15 @@ import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { QuickAddDialog } from '../shared/QuickAddDialog';
 import { SearchDialog } from '../shared/SearchDialog';
+import { useBudgetAlerts } from '../../hooks/useBudgetAlerts';
 
 export const Layout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+
+  // Enable budget alerts
+  useBudgetAlerts();
 
   // Global keyboard shortcuts
   useEffect(() => {

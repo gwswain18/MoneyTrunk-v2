@@ -33,7 +33,7 @@ const Dialog: React.FC<DialogProps> = ({ open, onOpenChange, children }) => {
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4"
       onClick={(e) => {
         if (e.target === overlayRef.current) onOpenChange(false);
       }}
@@ -43,7 +43,7 @@ const Dialog: React.FC<DialogProps> = ({ open, onOpenChange, children }) => {
       <div
         ref={contentRef}
         tabIndex={-1}
-        className="relative w-full max-w-lg rounded-xl bg-white p-6 shadow-xl focus:outline-none dark:bg-slate-900"
+        className="relative w-full max-w-lg rounded-t-xl sm:rounded-xl bg-white p-6 shadow-xl focus:outline-none dark:bg-slate-900 max-h-[90vh] overflow-y-auto"
       >
         {children}
       </div>
@@ -78,7 +78,7 @@ const DialogContent: React.FC<{ children: React.ReactNode; className?: string }>
 const DialogFooter: React.FC<{ children: React.ReactNode; className?: string }> = ({
   children,
   className,
-}) => <div className={cn('mt-6 flex justify-end gap-3', className)}>{children}</div>;
+}) => <div className={cn('mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-3', className)}>{children}</div>;
 
 const DialogClose: React.FC<{
   onClose: () => void;

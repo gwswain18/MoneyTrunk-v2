@@ -8,6 +8,9 @@ import {
   Expenses,
   Savings,
   Loans,
+  Budget,
+  Calendar,
+  NetWorth,
   Analytics,
   Reports,
   Settings,
@@ -58,6 +61,9 @@ function App() {
           <Route path="expenses" element={<Expenses />} />
           <Route path="savings" element={<Savings />} />
           <Route path="loans" element={<Loans />} />
+          <Route path="budget" element={<Budget />} />
+          <Route path="calendar" element={<Calendar />} />
+          <Route path="net-worth" element={<NetWorth />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="reports" element={<Reports />} />
           <Route path="settings" element={<Settings />} />
