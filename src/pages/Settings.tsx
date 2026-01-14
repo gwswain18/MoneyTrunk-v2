@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Download, Upload, Trash2, User, Moon, Shield, Save } from 'lucide-react';
+import { Download, Upload, Trash2, User, Moon, Shield, Save, FileSpreadsheet, Lock } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -11,6 +11,7 @@ import {
   DialogFooter,
   DialogClose,
 } from '../components/ui/dialog';
+import { PinSetupDialog } from '../components/shared/PinSetupDialog';
 import { useAppStore } from '../stores/useAppStore';
 
 export const Settings: React.FC = () => {
@@ -18,6 +19,7 @@ export const Settings: React.FC = () => {
   const [userName, setUserName] = useState(settings.userName);
   const [monthlyBudget, setMonthlyBudget] = useState(settings.monthlyBudget.toString());
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [pinSetupOpen, setPinSetupOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSaveProfile = () => {
@@ -50,6 +52,94 @@ export const Settings: React.FC = () => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(href);
+  };
+
+  const handleExportCSV = () => {
+    // Export expenses as CSV
+    const headers = ['Date', 'Category', 'Description', 'Amount', 'Tags'];
+    const rows = expenses.map((e) => [
+      e.date,
+      e.category,
+      `"${e.description.replace(/"/g, '""')}"`,
+      e.amount.toFixed(2),
+      e.tags?.join('; ') || '',
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((row) => row.join(',')),
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const href = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = href;
+    link.download = `moneytrunk-expenses-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(href);
+  };
+
+  const csvInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImportCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target?.result as string;
+        const lines = text.split('\n').filter((line) => line.trim());
+
+        // Skip header row
+        const dataLines = lines.slice(1);
+        let importCount = 0;
+
+        dataLines.forEach((line) => {
+          // Simple CSV parsing (handles quoted strings)
+          const values: string[] = [];
+          let current = '';
+          let inQuotes = false;
+
+          for (const char of line) {
+            if (char === '"') {
+              inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+              values.push(current.trim());
+              current = '';
+            } else {
+              current += char;
+            }
+          }
+          values.push(current.trim());
+
+          if (values.length >= 4) {
+            const [date, category, description, amount, tagsStr] = values;
+            const parsedAmount = parseFloat(amount);
+
+            if (date && description && !isNaN(parsedAmount)) {
+              useAppStore.getState().addExpense({
+                date: date || new Date().toISOString().split('T')[0],
+                category: category || 'Other',
+                description: description.replace(/^"|"$/g, ''),
+                amount: parsedAmount,
+                tags: tagsStr ? tagsStr.split(';').map((t) => t.trim()).filter(Boolean) : [],
+              });
+              importCount++;
+            }
+          }
+        });
+
+        alert(`Imported ${importCount} expenses from CSV!`);
+      } catch (error) {
+        alert('Failed to import CSV. Please check the file format.');
+        console.error(error);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   const handleImportClick = () => {
@@ -175,6 +265,35 @@ export const Settings: React.FC = () => {
         </CardContent>
       </Card>
 
+      {/* Security */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Lock className="h-5 w-5" /> Security
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium text-slate-900 dark:text-white">
+                PIN Lock
+              </p>
+              <p className="text-sm text-slate-500">
+                {settings.pinEnabled
+                  ? 'Your app is protected with a PIN'
+                  : 'Require a PIN to access the app'}
+              </p>
+            </div>
+            <Button
+              variant={settings.pinEnabled ? 'destructive' : 'outline'}
+              onClick={() => setPinSetupOpen(true)}
+            >
+              {settings.pinEnabled ? 'Disable' : 'Enable'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Data Management */}
       <Card>
         <CardHeader>
@@ -216,6 +335,32 @@ export const Settings: React.FC = () => {
             <Button variant="outline" onClick={handleImportClick}>
               Upload Backup File
             </Button>
+          </div>
+
+          {/* CSV Import/Export */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <FileSpreadsheet className="h-5 w-5 text-purple-600" />
+              <h4 className="font-medium">CSV Import/Export</h4>
+            </div>
+            <p className="text-sm text-slate-500 mb-3">
+              Export expenses to CSV or import from bank statements
+            </p>
+            <input
+              type="file"
+              accept=".csv"
+              ref={csvInputRef}
+              onChange={handleImportCSV}
+              className="hidden"
+            />
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={handleExportCSV}>
+                Export CSV
+              </Button>
+              <Button variant="outline" onClick={() => csvInputRef.current?.click()}>
+                Import CSV
+              </Button>
+            </div>
           </div>
 
           {/* Danger Zone */}
@@ -266,6 +411,9 @@ export const Settings: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* PIN Setup Dialog */}
+      <PinSetupDialog open={pinSetupOpen} onOpenChange={setPinSetupOpen} />
     </div>
   );
 };

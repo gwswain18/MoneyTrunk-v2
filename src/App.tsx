@@ -12,11 +12,13 @@ import {
   Reports,
   Settings,
 } from './pages';
+import { PinLock } from './components/shared/PinLock';
 import { useAppStore } from './stores/useAppStore';
 import './index.css';
 
 function App() {
   const [hydrated, setHydrated] = useState(false);
+  const [unlocked, setUnlocked] = useState(false);
   const { settings } = useAppStore();
 
   // Wait for Zustand to hydrate from localStorage
@@ -39,6 +41,11 @@ function App() {
         <p style={{ color: '#475569' }}>Loading MoneyTrunk...</p>
       </div>
     );
+  }
+
+  // Show PIN lock if enabled and not unlocked
+  if (settings.pinEnabled && !unlocked) {
+    return <PinLock onUnlock={() => setUnlocked(true)} />;
   }
 
   return (
