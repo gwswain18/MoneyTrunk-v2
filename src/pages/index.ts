@@ -1,0 +1,9 @@
+export { Dashboard } from './Dashboard';
+export { Bills } from './Bills';
+export { Income } from './Income';
+export { Expenses } from './Expenses';
+export { Savings } from './Savings';
+export { Loans } from './Loans';
+export { Analytics } from './Analytics';
+export { Reports } from './Reports';
+export { Settings } from './Settings';
